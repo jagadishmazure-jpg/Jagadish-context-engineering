@@ -45,8 +45,13 @@ def test_actions_pinned_to_sha():
 
 
 def test_no_real_secrets_or_personal_email():
-    for p in ROOT.rglob("*"):
-        if p.is_file() and ".git" not in p.parts and ".venv" not in p.parts and p.suffix in {".py", ".md", ".yml", ".toml"}:
+    # Only tracked/untracked repo files, never a local virtualenv (whatever its name).
+    files = subprocess.run(
+        ["git", "ls-files", "-co", "--exclude-standard"], cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout.split()
+    for f in files:
+        p = ROOT / f
+        if p.is_file() and p.suffix in {".py", ".md", ".yml", ".toml"}:
             t = p.read_text(errors="ignore")
             assert "BEGIN " + "PRIVATE KEY" not in t
             assert "@" + "gmail.com" not in t
